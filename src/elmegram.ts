@@ -1,9 +1,10 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 // Fix Elm not finding XMLHttpRequest.
-global.XMLHttpRequest = require('xhr2');
+import XMLHttpRequest from 'xhr2';
+global.XMLHttpRequest = XMLHttpRequest;
 
-async function startServer(unverifiedToken, BotElm) {
+export async function startServer(unverifiedToken: string, BotElm) {
     // SETUP TOKEN
     console.log('Checking token...')
     const { user, token } = await verifyToken(unverifiedToken);
@@ -20,10 +21,10 @@ async function startServer(unverifiedToken, BotElm) {
     const bot = BotElm.Elm.Main.init({
         flags: user
     });
-    bot.ports.errorPort.subscribe(function (errorMessage) {
+    bot.ports.errorPort.subscribe(function (errorMessage: string) {
         console.error(errorMessage);
     });
-    bot.ports.methodPort.subscribe(function (methods) {
+    bot.ports.methodPort.subscribe(function (methods: Array<{ method: string, content }>) {
         methods.reduce(async (promise, method) => {
             await promise;
 
@@ -39,7 +40,7 @@ async function startServer(unverifiedToken, BotElm) {
         }, Promise.resolve());
     });
 
-    function nullToUndefined(object, field) {
+    function nullToUndefined(object, field: string) {
         object[field] = object[field] == null ? undefined : object[field];
         return object;
     }
@@ -194,31 +195,27 @@ async function startServer(unverifiedToken, BotElm) {
     }
 }
 
-async function verifyToken(token) {
+async function verifyToken(token: string): Promise<{ user, token: string }> {
     if (!token) {
-        cancelWithError(`No token seems to be provided in the environment variable '${tokenName}'.`);
+        cancelWithError("The provided token was empty. Please provide a valid Telegram bot token.");
     }
     const res = await fetch(getBaseUrl(token) + 'getMe');
     const json = await res.json();
     if (!json.ok) {
         cancelWithError(json.description, token);
+        throw new Error("Error verifying token.")
     } else {
         const user = json.result;
         return { user, token }
     }
 
-    function cancelWithError(error, token) {
+    function cancelWithError(error: string, token?: string) {
         console.error(`Could not verify the token${token ? " '" + token + "'" : ''}.`);
         console.error('Explanation:');
         console.error(error);
-        process.exit(1);
     }
 }
 
-function getBaseUrl(token) {
+function getBaseUrl(token: string) {
     return `https://api.telegram.org/bot${token}/`;
-}
-
-module.exports = {
-    startServer
 }
