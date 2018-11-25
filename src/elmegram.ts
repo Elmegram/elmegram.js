@@ -4,7 +4,46 @@ import fetch from 'node-fetch';
 import XMLHttpRequest from 'xhr2';
 global.XMLHttpRequest = XMLHttpRequest;
 
-export async function startServer(unverifiedToken: string, BotElm) {
+export async function startPolling(unverifiedToken: string, BotElm) {
+    const { token, handleUpdates } = await setup(unverifiedToken, BotElm);
+    const baseUrl = getBaseUrl(token);
+
+    // RUN
+    console.info('Bot started.')
+    let offset = 0;
+
+    while (true) {
+        console.log(`\nFetching updates starting with id ${offset}...`);
+        const res = await fetch(
+            baseUrl + 'getUpdates',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ offset }),
+            }
+        );
+        const json = await res.json();
+        if (json.ok) {
+            const updates = json.result;
+            console.log('\nReceived updates:');
+            console.log(JSON.stringify(updates, undefined, 2));
+
+            const newOffset = await handleUpdates(updates);
+            offset = newOffset ? newOffset : offset;
+
+            await new Promise(resolve => {
+                const delay = 0;
+                setTimeout(resolve, delay);
+            });
+        } else {
+            console.error('Error fetching updates:');
+            console.error(json.description);
+            process.exit(2);
+        }
+    }
+}
+
+async function setup(unverifiedToken: string, BotElm): Promise<{ token: string, handleUpdates }> {
     // SETUP TOKEN
     console.log('Checking token...')
     const { user, token } = await verifyToken(unverifiedToken);
@@ -147,40 +186,6 @@ export async function startServer(unverifiedToken: string, BotElm) {
         }
     }
 
-    // RUN
-    console.info('Bot started.')
-    let offset = 0;
-
-    while (true) {
-        console.log(`\nFetching updates starting with id ${offset}...`);
-        const res = await fetch(
-            baseUrl + 'getUpdates',
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ offset }),
-            }
-        );
-        const json = await res.json();
-        if (json.ok) {
-            const updates = json.result;
-            console.log('\nReceived updates:');
-            console.log(JSON.stringify(updates, undefined, 2));
-
-            const newOffset = await handleUpdates(updates);
-            offset = newOffset ? newOffset : offset;
-
-            await new Promise(resolve => {
-                const delay = 0;
-                setTimeout(resolve, delay);
-            });
-        } else {
-            console.error('Error fetching updates:');
-            console.error(json.description);
-            process.exit(2);
-        }
-    }
-
     async function handleUpdates(updates) {
         const ids = updates.map(update => {
             bot.ports.incomingUpdatePort.send(update);
@@ -193,6 +198,8 @@ export async function startServer(unverifiedToken: string, BotElm) {
             return null;
         }
     }
+
+    return { token, handleUpdates }:
 }
 
 async function verifyToken(token: string): Promise<{ user, token: string }> {
@@ -216,6 +223,6 @@ async function verifyToken(token: string): Promise<{ user, token: string }> {
     }
 }
 
-function getBaseUrl(token: string) {
+function getBaseUrl(token: string): string {
     return `https://api.telegram.org/bot${token}/`;
 }
