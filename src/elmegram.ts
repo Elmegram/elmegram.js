@@ -1,9 +1,59 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 // Fix Elm not finding XMLHttpRequest.
-global.XMLHttpRequest = require('xhr2');
+import XMLHttpRequest from 'xhr2';
+global.XMLHttpRequest = XMLHttpRequest;
 
-async function startServer(unverifiedToken, BotElm) {
+export async function startPolling(unverifiedToken: string, BotElm) {
+    const { token, handleUpdates } = await setupBot(unverifiedToken, BotElm);
+    function method(method: string): string {
+        return getMethodUrl(token, method);
+    }
+
+    // RUN
+    console.log('Deleting potential webhook.')
+    const res = await fetch(method('deleteWebhook'));
+    const json = await res.json();
+    if (!json.ok || !json.result) {
+        console.error('Error deleting webhook:');
+        console.error(json.description);
+    }
+
+    console.log('Bot starting.')
+    let offset = 0;
+
+    while (true) {
+        console.log(`\nFetching updates starting with id ${offset}...`);
+        const res = await fetch(
+            method('getUpdates'),
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ offset }),
+            }
+        );
+        const json = await res.json();
+        if (json.ok) {
+            const updates = json.result;
+            console.log('\nReceived updates:');
+            console.log(JSON.stringify(updates, undefined, 2));
+
+            const newOffset = await handleUpdates(updates);
+            offset = newOffset ? newOffset : offset;
+
+            await new Promise(resolve => {
+                const delay = 0;
+                setTimeout(resolve, delay);
+            });
+        } else {
+            console.error('Error fetching updates:');
+            console.error(json.description);
+            process.exit(2);
+        }
+    }
+}
+
+export async function setupBot(unverifiedToken: string, BotElm): Promise<{ token: string, handleUpdates }> {
     // SETUP TOKEN
     console.log('Checking token...')
     const { user, token } = await verifyToken(unverifiedToken);
@@ -20,10 +70,10 @@ async function startServer(unverifiedToken, BotElm) {
     const bot = BotElm.Elm.Main.init({
         flags: user
     });
-    bot.ports.errorPort.subscribe(function (errorMessage) {
+    bot.ports.errorPort.subscribe(function (errorMessage: string) {
         console.error(errorMessage);
     });
-    bot.ports.methodPort.subscribe(function (methods) {
+    bot.ports.methodPort.subscribe(function (methods: Array<{ method: string, content }>) {
         methods.reduce(async (promise, method) => {
             await promise;
 
@@ -39,7 +89,7 @@ async function startServer(unverifiedToken, BotElm) {
         }, Promise.resolve());
     });
 
-    function nullToUndefined(object, field) {
+    function nullToUndefined(object, field: string) {
         object[field] = object[field] == null ? undefined : object[field];
         return object;
     }
@@ -146,40 +196,6 @@ async function startServer(unverifiedToken, BotElm) {
         }
     }
 
-    // RUN
-    console.info('Bot started.')
-    let offset = 0;
-
-    while (true) {
-        console.log(`\nFetching updates starting with id ${offset}...`);
-        const res = await fetch(
-            baseUrl + 'getUpdates',
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ offset }),
-            }
-        );
-        const json = await res.json();
-        if (json.ok) {
-            const updates = json.result;
-            console.log('\nReceived updates:');
-            console.log(JSON.stringify(updates, undefined, 2));
-
-            const newOffset = await handleUpdates(updates);
-            offset = newOffset ? newOffset : offset;
-
-            await new Promise(resolve => {
-                const delay = 0;
-                setTimeout(resolve, delay);
-            });
-        } else {
-            console.error('Error fetching updates:');
-            console.error(json.description);
-            process.exit(2);
-        }
-    }
-
     async function handleUpdates(updates) {
         const ids = updates.map(update => {
             bot.ports.incomingUpdatePort.send(update);
@@ -192,33 +208,35 @@ async function startServer(unverifiedToken, BotElm) {
             return null;
         }
     }
+
+    return { token, handleUpdates }:
 }
 
-async function verifyToken(token) {
+async function verifyToken(token: string): Promise<{ user, token: string }> {
     if (!token) {
-        cancelWithError(`No token seems to be provided in the environment variable '${tokenName}'.`);
+        cancelWithError("The provided token was empty. Please provide a valid Telegram bot token.");
     }
     const res = await fetch(getBaseUrl(token) + 'getMe');
     const json = await res.json();
     if (!json.ok) {
         cancelWithError(json.description, token);
+        throw new Error("Error verifying token.")
     } else {
         const user = json.result;
         return { user, token }
     }
 
-    function cancelWithError(error, token) {
+    function cancelWithError(error: string, token?: string) {
         console.error(`Could not verify the token${token ? " '" + token + "'" : ''}.`);
         console.error('Explanation:');
         console.error(error);
-        process.exit(1);
     }
 }
 
-function getBaseUrl(token) {
+function getBaseUrl(token: string): string {
     return `https://api.telegram.org/bot${token}/`;
 }
 
-module.exports = {
-    startServer
+function getMethodUrl(token: string, method: string) {
+    return getBaseUrl(token) + method;
 }

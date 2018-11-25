@@ -7,9 +7,18 @@
     "type": "git",
     "url": "https://github.com/Elmegram/elmegram.js"
   },
-  "main": "elmegram.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "main": "lib/elmegram",
+  "types": "lib/elmegram",
   "dependencies": {
     "node-fetch": "^2.3.0",
     "xhr2": "^0.1.4"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.10",
+    "@types/node-fetch": "^2.1.4",
+    "typescript": "^3.1.6"
   }
 }
