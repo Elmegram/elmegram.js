@@ -5,17 +5,27 @@ import XMLHttpRequest from 'xhr2';
 global.XMLHttpRequest = XMLHttpRequest;
 
 export async function startPolling(unverifiedToken: string, BotElm) {
-    const { token, handleUpdates } = await setup(unverifiedToken, BotElm);
-    const baseUrl = getBaseUrl(token);
+    const { token, handleUpdates } = await setupBot(unverifiedToken, BotElm);
+    function method(method: string): string {
+        return getMethodUrl(token, method);
+    }
 
     // RUN
-    console.info('Bot started.')
+    console.log('Deleting potential webhook.')
+    const res = await fetch(method('deleteWebhook'));
+    const json = await res.json();
+    if (!json.ok || !json.result) {
+        console.error('Error deleting webhook:');
+        console.error(json.description);
+    }
+
+    console.log('Bot starting.')
     let offset = 0;
 
     while (true) {
         console.log(`\nFetching updates starting with id ${offset}...`);
         const res = await fetch(
-            baseUrl + 'getUpdates',
+            method('getUpdates'),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -43,7 +53,7 @@ export async function startPolling(unverifiedToken: string, BotElm) {
     }
 }
 
-async function setup(unverifiedToken: string, BotElm): Promise<{ token: string, handleUpdates }> {
+export async function setupBot(unverifiedToken: string, BotElm): Promise<{ token: string, handleUpdates }> {
     // SETUP TOKEN
     console.log('Checking token...')
     const { user, token } = await verifyToken(unverifiedToken);
@@ -225,4 +235,8 @@ async function verifyToken(token: string): Promise<{ user, token: string }> {
 
 function getBaseUrl(token: string): string {
     return `https://api.telegram.org/bot${token}/`;
+}
+
+function getMethodUrl(token: string, method: string) {
+    return getBaseUrl(token) + method;
 }
