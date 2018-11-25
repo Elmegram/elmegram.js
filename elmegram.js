@@ -1,8 +1,9 @@
 const fetch = require('node-fetch');
 
+// Fix Elm not finding XMLHttpRequest.
 global.XMLHttpRequest = require('xhr2');
 
-async function startServer(unverifiedToken, botPath) {
+async function startServer(unverifiedToken, BotElm) {
     // SETUP TOKEN
     console.log('Checking token...')
     const { user, token } = await verifyToken(unverifiedToken);
@@ -16,8 +17,7 @@ async function startServer(unverifiedToken, botPath) {
     user.username = user.username || null;
     user.language_code = user.language_code || null;
 
-    const botElm = require(botPath);
-    const bot = botElm.Elm.Main.init({
+    const bot = BotElm.Elm.Main.init({
         flags: user
     });
     bot.ports.errorPort.subscribe(function (errorMessage) {
