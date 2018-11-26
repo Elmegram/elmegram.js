@@ -5,7 +5,7 @@ import XMLHttpRequest from 'xhr2';
 global.XMLHttpRequest = XMLHttpRequest;
 
 export async function startPolling(unverifiedToken: string, BotElm) {
-    const { token, handleUpdates } = await setupBot(unverifiedToken, BotElm);
+    const { token, handleUpdate } = await setupBot(unverifiedToken, BotElm);
     function method(method: string): string {
         return getMethodUrl(token, method);
     }
@@ -51,9 +51,22 @@ export async function startPolling(unverifiedToken: string, BotElm) {
             process.exit(2);
         }
     }
+
+    async function handleUpdates(updates) {
+        const ids = updates.map(update => {
+            handleUpdate(update);
+            return update.update_id;
+        })
+
+        if (ids.length) {
+            return ids[ids.length - 1] + 1;
+        } else {
+            return null;
+        }
+    }
 }
 
-export async function setupBot(unverifiedToken: string, BotElm): Promise<{ token: string, handleUpdates }> {
+export async function setupBot(unverifiedToken: string, BotElm): Promise<{ token: string, handleUpdate }> {
     // SETUP TOKEN
     console.log('Checking token...')
     const { user, token } = await verifyToken(unverifiedToken);
@@ -196,20 +209,7 @@ export async function setupBot(unverifiedToken: string, BotElm): Promise<{ token
         }
     }
 
-    async function handleUpdates(updates) {
-        const ids = updates.map(update => {
-            bot.ports.incomingUpdatePort.send(update);
-            return update.update_id;
-        })
-
-        if (ids.length) {
-            return ids[ids.length - 1] + 1;
-        } else {
-            return null;
-        }
-    }
-
-    return { token, handleUpdates }:
+    return { token, handleUpdate: bot.ports.incomingUpdatePort.send };
 }
 
 async function verifyToken(token: string): Promise<{ user, token: string }> {
