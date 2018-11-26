@@ -4,6 +4,19 @@ import fetch from 'node-fetch';
 import XMLHttpRequest from 'xhr2';
 global.XMLHttpRequest = XMLHttpRequest;
 
+export async function setupWebhook(token: string, url: string) {
+    await fetch(
+        getMethodUrl(token, 'setWebhook')
+        , {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url
+            })
+        }
+    );
+}
+
 export async function startPolling(unverifiedToken: string, BotElm) {
     const { token, handleUpdate } = await setupBot(unverifiedToken, BotElm);
     function method(method: string): string {
