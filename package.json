@@ -8,7 +8,7 @@
     "url": "https://github.com/Elmegram/elmegram.js"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc || exit 0"
   },
   "main": "lib/elmegram",
   "types": "lib/elmegram",
