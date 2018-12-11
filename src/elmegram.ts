@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 
 // Fix Elm not finding XMLHttpRequest.
 import XMLHttpRequest from 'xhr2';
-global.XMLHttpRequest = XMLHttpRequest;
+global['XMLHttpRequest'] = XMLHttpRequest;
 
 export async function setupWebhook(token: string, url: string) {
     await fetch(
