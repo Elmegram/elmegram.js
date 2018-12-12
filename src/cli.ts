@@ -35,7 +35,13 @@ class ElmegramCli extends Command {
   async run() {
     const { args, flags } = this.parse(ElmegramCli)
 
-    const tokenEnvVarName = flags.token
+    const validToken = await this.validateToken(flags.token)
+    const src = await this.validateSourceFile(args.src)
+    const compiled = await this.compile(src, flags.dev);
+    Elmegram.startPolling(validToken, compiled)
+  }
+
+  async validateToken(tokenEnvVarName: string): Promise<Elmegram.ValidToken> {
     const unverifiedToken = process.env[tokenEnvVarName]
     if (unverifiedToken === undefined) {
       this.error(
@@ -59,7 +65,10 @@ class ElmegramCli extends Command {
       }
     }
 
-    const src = args.src
+    return validToken
+  }
+
+  async validateSourceFile(src: string): Promise<string> {
     const absSrc = Path.resolve(src)
     try {
       await fs.stat(absSrc)
@@ -70,10 +79,17 @@ class ElmegramCli extends Command {
       this.error(`The file ${src} is not an .elm file. Please provide me with an Elm source file.`, { exit: Errors.FILE_WRONG_EXTENSION })
     }
 
-    this.log(`Compiling ${absSrc}.`)
+    return absSrc
+  }
+
+  async compile(src: string, dev: boolean): Promise<string> {
+    this.log(`Compiling ${src}.`)
     const compiledPath = Path.resolve(__dirname, './compiled/bot.js')
-    compile([absSrc], { output: compiledPath, optimize: !flags.dev }).on('close', exitCode => {
-      Elmegram.startPolling(validToken, compiledPath)
+    const shouldOptimize = !dev;
+    return new Promise(resolve => {
+      compile([src], { output: compiledPath, optimize: shouldOptimize }).on('close', () => {
+        resolve(compiledPath);
+      })
     })
   }
 }
