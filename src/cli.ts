@@ -93,7 +93,7 @@ class ElmegramCli extends Command {
 
   async compile(src: string, dev: boolean): Promise<string> {
     this.log(`Compiling ${src}.`)
-    const compiledPath = Path.resolve(__dirname, './compiled/bot.js')
+    const compiledPath = Path.resolve(__dirname, '../compiled/bot.js')
     const shouldOptimize = !dev;
     return new Promise(resolve => {
       compile([src], { output: compiledPath, optimize: shouldOptimize }).on('close', () => {
