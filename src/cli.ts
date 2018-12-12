@@ -4,9 +4,14 @@ import { promises as fs } from 'fs'
 import { compile } from 'node-elm-compiler'
 
 import * as Elmegram from './elmegram'
-import * as Errors from './errors'
 
 class ElmegramCli extends Command {
+  static FILE_NOT_FOUND = 100
+  static FILE_WRONG_EXTENSION = 101
+  static TOKEN_NOT_FOUND = 200
+  static TOKEN_EMPTY = 201
+  static TOKEN_INVALID = 202
+
   static description = 'Run Elmegram bots.'
 
   static flags = {
@@ -41,12 +46,13 @@ class ElmegramCli extends Command {
     Elmegram.startPolling(validToken, compiled)
   }
 
+
   async validateToken(tokenEnvVarName: string): Promise<Elmegram.ValidToken> {
     const unverifiedToken = process.env[tokenEnvVarName]
     if (unverifiedToken === undefined) {
       this.error(
-        `I could not find a token in the environment variable ${tokenEnvVarName}.\nPlease set that variable to your token or see more help with --help.`,
-        { exit: Errors.TOKEN_NOT_FOUND }
+        `I could not find a token in the environment variable ${tokenEnvVarName}. Please set that variable to your token or see more help with --help.`,
+        { exit: ElmegramCli.TOKEN_NOT_FOUND }
       )
     }
 
@@ -55,12 +61,12 @@ class ElmegramCli extends Command {
       if (error instanceof Elmegram.EmptyToken) {
         this.error(
           `The token in the environment variable ${tokenEnvVarName} is empty. Please provide a valid token.`
-          , { exit: Errors.TOKEN_EMPTY }
+          , { exit: ElmegramCli.TOKEN_EMPTY }
         )
       } else if (error instanceof Elmegram.BadToken) {
         this.error(
           `The token in the environment variable ${tokenEnvVarName} is not valid. Please check that there is no typo.`
-          , { exit: Errors.TOKEN_INVALID }
+          , { exit: ElmegramCli.TOKEN_INVALID }
         )
       }
     }
@@ -73,10 +79,13 @@ class ElmegramCli extends Command {
     try {
       await fs.stat(absSrc)
     } catch (e) {
-      this.error(`I could not find ${absSrc}.`, { exit: Errors.FILE_NOT_FOUND })
+      this.error(`I could not find ${absSrc}.`, { exit: ElmegramCli.FILE_NOT_FOUND })
     }
     if (Path.extname(absSrc) !== '.elm') {
-      this.error(`The file ${src} is not an .elm file. Please provide me with an Elm source file.`, { exit: Errors.FILE_WRONG_EXTENSION })
+      this.error(
+        `The file ${src} is not an .elm file. Please provide me with an Elm source file.`,
+        { exit: ElmegramCli.FILE_WRONG_EXTENSION }
+      )
     }
 
     return absSrc

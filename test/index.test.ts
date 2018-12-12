@@ -1,11 +1,10 @@
 import { expect, test } from '@oclif/test'
-import * as Errors from '../src/errors'
 
-import cmd = require('../src')
+import cmd = require('../src/cli')
 
 describe('elmegram', () => {
   test
     .do(() => cmd.run(['./nonexistant']))
-    .exit(Errors.FILE_NOT_FOUND)
+    .exit(cmd.FILE_NOT_FOUND)
     .it('fails when src file cannot be found')
 })
