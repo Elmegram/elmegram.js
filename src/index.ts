@@ -1,28 +1,35 @@
-import {Command, flags} from '@oclif/command'
+import { Command, flags } from '@oclif/command'
+import * as Errors from './errors'
+import * as Path from 'path'
+import { promises as fs } from 'fs';
 
 class Elmegram extends Command {
-  static description = 'describe the command here'
+  static description = 'Run Elmegram bots.'
 
   static flags = {
-    // add --version flag to show CLI version
-    version: flags.version({char: 'v'}),
-    help: flags.help({char: 'h'}),
-    // flag with a value (-n, --name=VALUE)
-    name: flags.string({char: 'n', description: 'name to print'}),
-    // flag with no value (-f, --force)
-    force: flags.boolean({char: 'f'}),
+    version: flags.version({ char: 'v' }),
+    help: flags.help({ char: 'h' }),
   }
 
-  static args = [{name: 'file'}]
+  static args = [{
+    name: 'src',
+    required: true,
+    description: 'the Elm source file containing the bot'
+  }]
 
   async run() {
-    const {args, flags} = this.parse(Elmegram)
+    const { args } = this.parse(Elmegram)
 
-    const name = flags.name || 'world'
-    this.log(`hello ${name} from .\\src\\index.ts`)
-    if (args.file && flags.force) {
-      this.log(`you input --force and --file: ${args.file}`)
+    const src = args.src;
+    const absSrc = Path.resolve(src)
+    try {
+      const stats = await fs.stat(absSrc);
+      this.log(stats.toString())
+    } catch (e) {
+      this.error(`I could not find ${absSrc}.`, { exit: Errors.FILE_NOT_FOUND })
     }
+
+    this.log(`I will compile ${absSrc}.`)
   }
 }
 
