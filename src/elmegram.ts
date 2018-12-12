@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import * as Path from 'path'
 
 // Fix Elm not finding XMLHttpRequest.
 import XMLHttpRequest from 'xhr2';
@@ -17,8 +18,9 @@ export async function setupWebhook(token: string, url: string) {
     );
 }
 
-export async function startPolling(unverifiedToken: string, BotElm) {
-    const { token, handleUpdate } = await setupBot(unverifiedToken, BotElm);
+export async function startPolling(validToken: ValidToken, botPath: string) {
+    const BotElm = require(Path.resolve(botPath))
+    const { token, handleUpdate } = await setupBot(validToken, BotElm);
     function method(method: string): string {
         return getMethodUrl(token, method);
     }
@@ -79,12 +81,10 @@ export async function startPolling(unverifiedToken: string, BotElm) {
     }
 }
 
-export async function setupBot(unverifiedToken: string, BotElm): Promise<{ token: string, handleUpdate }> {
+export async function setupBot(token: ValidToken, BotElm): Promise<{ token: string, handleUpdate }> {
     // SETUP TOKEN
-    console.log('Checking token...')
-    const { user, token } = await verifyToken(unverifiedToken);
-    console.log(`Token valid for bot '${user.first_name}'.`)
-    const baseUrl = getBaseUrl(token);
+    const user = token.user
+    const baseUrl = getBaseUrl(token.token);
 
     // SETUP ELM
     // Fill in undefined fields with null to help Elm detect them
@@ -222,28 +222,52 @@ export async function setupBot(unverifiedToken: string, BotElm): Promise<{ token
         }
     }
 
-    return { token, handleUpdate: bot.ports.incomingUpdatePort.send };
+    return { token: token.token, handleUpdate: bot.ports.incomingUpdatePort.send };
 }
 
-async function verifyToken(token: string): Promise<{ user, token: string }> {
-    if (!token) {
-        cancelWithError("The provided token was empty. Please provide a valid Telegram bot token.");
+export class ValidToken {
+    constructor(
+        public user,
+        public token: string
+    ) { }
+}
+
+export class EmptyToken extends Error {
+    constructor() {
+        super("The token is empty.")
     }
-    const res = await fetch(getBaseUrl(token) + 'getMe');
-    const json = await res.json();
-    if (!json.ok) {
-        cancelWithError(json.description, token);
-        throw new Error("Error verifying token.")
-    } else {
-        const user = json.result;
-        return { user, token }
+}
+export class BadToken extends Error {
+    constructor() {
+        super("The token could not be verified by Telegram.")
+    }
+}
+
+export async function validateToken(unverifiedToken: string): Promise<{ validToken?: ValidToken, error?: EmptyToken | BadToken }> {
+    if (!unverifiedToken) {
+        return { error: new EmptyToken() }
     }
 
-    function cancelWithError(error: string, token?: string) {
-        console.error(`Could not verify the token${token ? " '" + token + "'" : ''}.`);
+    const res = await fetch(getBaseUrl(unverifiedToken) + 'getMe');
+    const json = await res.json();
+    if (!json.ok) {
+        return { error: new BadToken() }
+    } else {
+        const user = json.result;
+        return { validToken: new ValidToken(user, unverifiedToken) }
+    }
+}
+
+async function verifyToken(unverifiedToken: string): Promise<ValidToken> {
+    const { validToken, error } = await validateToken(unverifiedToken)
+    if (error) {
+        console.error(`Could not verify the token${unverifiedToken ? " '" + unverifiedToken + "'" : ''}.`);
         console.error('Explanation:');
         console.error(error);
+        throw new Error("Error verifying token.")
     }
+
+    return validToken;
 }
 
 function getBaseUrl(token: string): string {
