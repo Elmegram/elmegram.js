@@ -81,9 +81,6 @@ export async function startPolling(token: string, botPath: string) {
 }
 
 export async function setupBot(token: string, BotElm) {
-    // SETUP TOKEN
-    const baseUrl = getBaseUrl(token);
-
     const bot = BotElm.Elm.Main.init({
         flags: { token }
     });
@@ -92,24 +89,6 @@ export async function setupBot(token: string, BotElm) {
     });
 
     return bot.ports.incomingUpdatePort.send;
-}
-
-export class ValidToken {
-    constructor(
-        public user,
-        public token: string
-    ) { }
-}
-
-export class EmptyToken extends Error {
-    constructor() {
-        super("The token is empty.")
-    }
-}
-export class BadToken extends Error {
-    constructor() {
-        super("The token could not be verified by Telegram.")
-    }
 }
 
 function getBaseUrl(token: string): string {
