@@ -2,8 +2,7 @@ import fetch from 'node-fetch';
 import * as Path from 'path'
 
 // Fix Elm not finding XMLHttpRequest.
-import XMLHttpRequest from 'xhr2';
-global['XMLHttpRequest'] = XMLHttpRequest;
+global['XMLHttpRequest'] = require('xhr2')
 
 export async function setupWebhook(token: string, url: string) {
     await fetch(
@@ -18,9 +17,9 @@ export async function setupWebhook(token: string, url: string) {
     );
 }
 
-export async function startPolling(validToken: ValidToken, botPath: string) {
+export async function startPolling(token: string, botPath: string) {
     const BotElm = require(Path.resolve(botPath))
-    const { token, handleUpdate } = await setupBot(validToken, BotElm);
+    const handleUpdate = await setupBot(token, BotElm);
     function method(method: string): string {
         return getMethodUrl(token, method);
     }
@@ -81,20 +80,12 @@ export async function startPolling(validToken: ValidToken, botPath: string) {
     }
 }
 
-export async function setupBot(token: ValidToken, BotElm): Promise<{ token: string, handleUpdate }> {
+export async function setupBot(token: string, BotElm) {
     // SETUP TOKEN
-    const user = token.user
-    const baseUrl = getBaseUrl(token.token);
-
-    // SETUP ELM
-    // Fill in undefined fields with null to help Elm detect them
-    // and prevent it from crashing.
-    user.last_name = user.last_name || null;
-    user.username = user.username || null;
-    user.language_code = user.language_code || null;
+    const baseUrl = getBaseUrl(token);
 
     const bot = BotElm.Elm.Main.init({
-        flags: user
+        flags: { token }
     });
     bot.ports.errorPort.subscribe(function (errorMessage: string) {
         console.error(errorMessage);
@@ -222,7 +213,7 @@ export async function setupBot(token: ValidToken, BotElm): Promise<{ token: stri
         }
     }
 
-    return { token: token.token, handleUpdate: bot.ports.incomingUpdatePort.send };
+    return bot.ports.incomingUpdatePort.send;
 }
 
 export class ValidToken {
@@ -241,33 +232,6 @@ export class BadToken extends Error {
     constructor() {
         super("The token could not be verified by Telegram.")
     }
-}
-
-export async function validateToken(unverifiedToken: string): Promise<{ validToken?: ValidToken, error?: EmptyToken | BadToken }> {
-    if (!unverifiedToken) {
-        return { error: new EmptyToken() }
-    }
-
-    const res = await fetch(getBaseUrl(unverifiedToken) + 'getMe');
-    const json = await res.json();
-    if (!json.ok) {
-        return { error: new BadToken() }
-    } else {
-        const user = json.result;
-        return { validToken: new ValidToken(user, unverifiedToken) }
-    }
-}
-
-async function verifyToken(unverifiedToken: string): Promise<ValidToken> {
-    const { validToken, error } = await validateToken(unverifiedToken)
-    if (error) {
-        console.error(`Could not verify the token${unverifiedToken ? " '" + unverifiedToken + "'" : ''}.`);
-        console.error('Explanation:');
-        console.error(error);
-        throw new Error("Error verifying token.")
-    }
-
-    return validToken;
 }
 
 function getBaseUrl(token: string): string {

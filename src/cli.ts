@@ -40,38 +40,23 @@ class ElmegramCli extends Command {
   async run() {
     const { args, flags } = this.parse(ElmegramCli)
 
-    const validToken = await this.validateToken(flags.token)
+    const token = await this.getToken(flags.token)
     const src = await this.validateSourceFile(args.src)
     const compiled = await this.compile(src, flags.dev);
-    Elmegram.startPolling(validToken, compiled)
+    Elmegram.startPolling(token, compiled)
   }
 
 
-  async validateToken(tokenEnvVarName: string): Promise<Elmegram.ValidToken> {
-    const unverifiedToken = process.env[tokenEnvVarName]
-    if (unverifiedToken === undefined) {
+  async getToken(tokenEnvVarName: string): Promise<string> {
+    const token = process.env[tokenEnvVarName]
+    if (token === undefined) {
       this.error(
         `I could not find a token in the environment variable ${tokenEnvVarName}. Please set that variable to your token or see more help with --help.`,
         { exit: ElmegramCli.TOKEN_NOT_FOUND }
       )
+    } else {
+      return token
     }
-
-    const { validToken, error } = await Elmegram.validateToken(unverifiedToken)
-    if (error) {
-      if (error instanceof Elmegram.EmptyToken) {
-        this.error(
-          `The token in the environment variable ${tokenEnvVarName} is empty. Please provide a valid token.`
-          , { exit: ElmegramCli.TOKEN_EMPTY }
-        )
-      } else if (error instanceof Elmegram.BadToken) {
-        this.error(
-          `The token in the environment variable ${tokenEnvVarName} is not valid. Please check that there is no typo.`
-          , { exit: ElmegramCli.TOKEN_INVALID }
-        )
-      }
-    }
-
-    return validToken
   }
 
   async validateSourceFile(src: string): Promise<string> {
