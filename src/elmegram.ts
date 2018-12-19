@@ -19,7 +19,7 @@ export async function setupWebhook(token: string, url: string) {
 
 export async function startPolling(token: string, botPath: string) {
     const BotElm = require(Path.resolve(botPath))
-    const handleUpdate = await setupBot(token, BotElm);
+    await setupBot(token, BotElm);
     function method(method: string): string {
         return getMethodUrl(token, method);
     }
@@ -33,51 +33,7 @@ export async function startPolling(token: string, botPath: string) {
         console.error(json.description);
     }
 
-    console.log('Bot starting.')
-    let offset = 0;
-
-    while (true) {
-        console.log(`\nFetching updates starting with id ${offset}...`);
-        const res = await fetch(
-            method('getUpdates'),
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ offset }),
-            }
-        );
-        const json = await res.json();
-        if (json.ok) {
-            const updates = json.result;
-            console.log('\nReceived updates:');
-            console.log(JSON.stringify(updates, undefined, 2));
-
-            const newOffset = await handleUpdates(updates);
-            offset = newOffset ? newOffset : offset;
-
-            await new Promise(resolve => {
-                const delay = 0;
-                setTimeout(resolve, delay);
-            });
-        } else {
-            console.error('Error fetching updates:');
-            console.error(json.description);
-            process.exit(2);
-        }
-    }
-
-    async function handleUpdates(updates) {
-        const ids = updates.map(update => {
-            handleUpdate(update);
-            return update.update_id;
-        })
-
-        if (ids.length) {
-            return ids[ids.length - 1] + 1;
-        } else {
-            return null;
-        }
-    }
+    console.log('Bot started.')
 }
 
 export async function setupBot(token: string, BotElm) {
@@ -87,8 +43,6 @@ export async function setupBot(token: string, BotElm) {
     bot.ports.errorPort.subscribe(function (errorMessage: string) {
         console.error(errorMessage);
     });
-
-    return bot.ports.incomingUpdatePort.send;
 }
 
 function getBaseUrl(token: string): string {
