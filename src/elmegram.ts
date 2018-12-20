@@ -32,16 +32,14 @@ export async function startPolling(token: string, botPath: string) {
         console.error('Error deleting webhook:');
         console.error(json.description);
     }
-
-    console.log('Bot started.')
 }
 
 export async function setupBot(token: string, BotElm) {
     const bot = BotElm.Elm.Main.init({
         flags: { token }
     });
-    bot.ports.errorPort.subscribe(function (errorMessage: string) {
-        console.error(errorMessage);
+    bot.ports.consolePort.subscribe(function (log: { level: string, message: string }) {
+        console[log.level](log.message);
     });
 }
 
