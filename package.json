@@ -1,24 +1,57 @@
 {
   "name": "elmegram.js",
-  "description": "Node.js bindings for running Elmegram bots.",
+  "description": "Run Elmegram bots.",
   "version": "1.0.0",
-  "license": "BSD-3-Clause",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Elmegram/elmegram.js"
+  "author": "Y0hy0h @Y0hy0h",
+  "bin": {
+    "elmegram": "./bin/run"
   },
-  "scripts": {
-    "build": "tsc"
-  },
-  "main": "lib/elmegram",
-  "types": "lib/elmegram",
+  "bugs": "https://github.com/Elmegram/elmegram.js/issues",
   "dependencies": {
+    "@oclif/command": "^1",
+    "@oclif/config": "^1",
+    "@oclif/plugin-help": "^2",
+    "node-elm-compiler": "^5.0.1",
     "node-fetch": "^2.3.0",
+    "tslib": "^1",
     "xhr2": "^0.1.4"
   },
   "devDependencies": {
-    "@types/node": "^10.12.10",
+    "@oclif/test": "^1",
+    "@oclif/tslint": "^3",
+    "@types/chai": "^4",
+    "@types/mocha": "^5",
+    "@types/node": "^10",
     "@types/node-fetch": "^2.1.4",
-    "typescript": "^3.1.6"
-  }
+    "chai": "^4",
+    "mocha": "^5",
+    "nyc": "^13",
+    "rimraf": "^2.6.2",
+    "ts-node": "^7",
+    "tslint": "^5",
+    "typescript": "^3.0"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "files": [
+    "/bin",
+    "/lib"
+  ],
+  "homepage": "https://github.com/Elmegram/elmegram.js",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "BSD-3-Clause",
+  "main": "lib/elmegram.js",
+  "oclif": {
+    "bin": "elmegram"
+  },
+  "repository": "Elmegram/elmegram.js",
+  "scripts": {
+    "posttest": "tslint -p test -t stylish",
+    "prepack": "rimraf lib && tsc -b",
+    "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\""
+  },
+  "types": "lib/index.d.ts"
 }
