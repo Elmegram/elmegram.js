@@ -19,10 +19,6 @@ export async function setupWebhook(token: string, url: string) {
 
 export async function startPolling(token: string, botPath: string) {
     const BotElm = require(Path.resolve(botPath))
-    await setupBot(token, BotElm);
-}
-
-export async function setupBot(token: string, BotElm) {
     const bot = BotElm.Elm.Main.init({
         flags: { token }
     });
