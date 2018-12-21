@@ -4,6 +4,7 @@ import * as ElmCompiler from 'node-elm-compiler'
 
 // Fix Elm not finding XMLHttpRequest.
 global['XMLHttpRequest'] = require('xhr2')
+global['FileList'] = require('file-api').FileList
 
 export async function startPolling(token: string, botPath: string) {
     const compiled = await BotCompiler.compile(PollingBot, Path.resolve(botPath));
