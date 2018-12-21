@@ -24,7 +24,7 @@ class ElmegramCli extends Command {
     }),
     dev: flags.boolean({
       char: 'd',
-      description: "if set, compiles Elm file without --optimize",
+      description: "if set, compiles Elm file in dev mode, i. e. without --optimize",
       default: false
     })
   }
