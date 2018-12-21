@@ -49,6 +49,7 @@
   },
   "repository": "Elmegram/elmegram.js",
   "scripts": {
+    "build": "tsc",
     "posttest": "tslint -p test -t stylish",
     "prepack": "rimraf lib && tsc -b",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\""
