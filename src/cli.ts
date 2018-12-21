@@ -1,7 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import * as Path from 'path'
 import { promises as fs } from 'fs'
-import { compile } from 'node-elm-compiler'
 
 import * as Elmegram from './elmegram'
 
@@ -24,7 +23,7 @@ class ElmegramCli extends Command {
     }),
     dev: flags.boolean({
       char: 'd',
-      description: "if set, compiles Elm file without --optimize",
+      description: "if set, compiles Elm file in dev mode, i. e. without --optimize",
       default: false
     })
   }
@@ -42,8 +41,7 @@ class ElmegramCli extends Command {
 
     const token = await this.getToken(flags.token)
     const src = await this.validateSourceFile(args.src)
-    const compiled = await this.compile(src, flags.dev);
-    Elmegram.startPolling(token, compiled)
+    await Elmegram.startPolling(token, src);
   }
 
 
@@ -74,21 +72,6 @@ class ElmegramCli extends Command {
     }
 
     return absSrc
-  }
-
-  async compile(src: string, dev: boolean): Promise<string> {
-    this.log(`Compiling ${src}.`)
-    const compiledPath = Path.resolve(__dirname, '../compiled/bot.js')
-    const shouldOptimize = !dev;
-    return new Promise((resolve, reject) => {
-      compile([src], { output: compiledPath, optimize: shouldOptimize }).on('close', (exitCode) => {
-        if (exitCode == 0) {
-          resolve(compiledPath)
-        } else {
-          reject()
-        }
-      })
-    })
   }
 }
 
