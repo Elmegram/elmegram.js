@@ -45,6 +45,7 @@
   ],
   "license": "BSD-3-Clause",
   "main": "lib/elmegram.js",
+  "types": "lib/elmegram.d.ts",
   "oclif": {
     "bin": "elmegram"
   },
@@ -54,6 +55,5 @@
     "posttest": "tslint -p test -t stylish",
     "prepack": "rimraf lib && tsc -b",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\""
-  },
-  "types": "lib/index.d.ts"
+  }
 }
