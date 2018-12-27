@@ -66,7 +66,7 @@ export class CustomBot {
         private bot: {
             ports: {
                 consolePort: ReceivingPort,
-                sendMessagePort: ReceivingPort,
+                sendMethodPort: ReceivingPort,
                 incomingUpdatePort: SendingPort,
             }
         },
@@ -77,7 +77,7 @@ export class CustomBot {
     }
 
     public onSendMessage(callback: (toSend: SendMessage) => void) {
-        this.bot.ports.sendMessagePort.subscribe(callback);
+        this.bot.ports.sendMethodPort.subscribe(callback);
     }
 
     public sendUpdates(updates: IncomingUpdate[]) {
