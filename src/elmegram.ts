@@ -4,6 +4,7 @@ import * as ElmCompiler from 'node-elm-compiler'
 
 // Fix Elm not finding XMLHttpRequest.
 global['XMLHttpRequest'] = require('xhr2')
+global['FileList'] = require('file-api').FileList
 
 export async function startPolling(token: string, botPath: string) {
     const compiled = await BotCompiler.compile(PollingBot, Path.resolve(botPath));
@@ -65,7 +66,7 @@ export class CustomBot {
         private bot: {
             ports: {
                 consolePort: ReceivingPort,
-                sendMessagePort: ReceivingPort,
+                sendMethodPort: ReceivingPort,
                 incomingUpdatePort: SendingPort,
             }
         },
@@ -76,7 +77,7 @@ export class CustomBot {
     }
 
     public onSendMessage(callback: (toSend: SendMessage) => void) {
-        this.bot.ports.sendMessagePort.subscribe(callback);
+        this.bot.ports.sendMethodPort.subscribe(callback);
     }
 
     public sendUpdates(updates: IncomingUpdate[]) {

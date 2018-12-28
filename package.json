@@ -11,6 +11,7 @@
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/plugin-help": "^2",
+    "file-api": "^0.10.4",
     "node-elm-compiler": "^5.0.1",
     "node-fetch": "^2.3.0",
     "tslib": "^1",
@@ -44,6 +45,7 @@
   ],
   "license": "BSD-3-Clause",
   "main": "lib/elmegram.js",
+  "types": "lib/elmegram.d.ts",
   "oclif": {
     "bin": "elmegram"
   },
@@ -53,6 +55,5 @@
     "posttest": "tslint -p test -t stylish",
     "prepack": "rimraf lib && tsc -b",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\""
-  },
-  "types": "lib/index.d.ts"
+  }
 }
